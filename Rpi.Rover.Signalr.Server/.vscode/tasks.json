@@ -23,7 +23,7 @@
                 ";",
                 "sh",
                 "-c",
-                "\"rsync -rvuz ${workspaceFolder}/bin/linux-arm/publish/ pi@rpirover.local:/home/pi/dotnet/${workspaceFolderBasename}\""
+                "\"rsync -rvuz ${workspaceFolder}/bin/linux-arm/publish/ pi@rpirover.local:~/${workspaceFolderBasename}\""
             ],
             "windows": {
                 "command": "cmd",
