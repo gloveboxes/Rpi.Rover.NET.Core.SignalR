@@ -51,7 +51,15 @@ namespace Rpi.Rover.Server
             signalrConnection.Closed += async e =>
             {
                 Console.WriteLine("### SignalR Connection closed... ###");
-                await signalrConnection.StartAsync();
+                try
+                {
+                    await Task.Delay(new Random().Next(0, 5) * 1000);
+                    await signalrConnection.StartAsync();
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine($"### SignalR Connection Exception: {ex.Message}");
+                }
                 Console.WriteLine("### Connected to SignalR... ###");
             };
 
