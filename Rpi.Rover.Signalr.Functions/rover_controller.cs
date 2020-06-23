@@ -13,11 +13,6 @@ namespace Rpi.Rover.Signalr.Functions
 {
     public static class rover_controller
     {
-        enum MotorControl
-        {
-            Stop, Forward, LeftForward, RightForward, LeftBackward, RightBackward, Backward, SharpLeft, SharpRight, ShutDown, Unknown
-        }
-
         [FunctionName("negotiate")]
         public static SignalRConnectionInfo Negotiate(
             [HttpTrigger(AuthorizationLevel.Anonymous)]HttpRequest req,
@@ -26,157 +21,13 @@ namespace Rpi.Rover.Signalr.Functions
             return connectionInfo;
         }
 
-        [FunctionName("stop")]
-        public static Task Stop(
+        [FunctionName("control")]
+        public static Task Control(
             [HttpTrigger(AuthorizationLevel.Anonymous, "get", Route = null)] HttpRequest req,
             [SignalR(HubName = "ROVER")] IAsyncCollector<SignalRMessage> signalRMessages,
             ILogger log)
         {
-            string command = ((int)MotorControl.Stop).ToString();
-
-            return signalRMessages.AddAsync(
-                   new SignalRMessage
-                   {
-                       Target = "newMessage",
-                       Arguments = new[] { command }
-                   });
-        }
-
-        [FunctionName("forward")]
-        public static Task Forward(
-            [HttpTrigger(AuthorizationLevel.Anonymous, "get", Route = null)] HttpRequest req,
-            [SignalR(HubName = "ROVER")] IAsyncCollector<SignalRMessage> signalRMessages,
-            ILogger log)
-        {
-            string command = ((int)MotorControl.Forward).ToString();
-
-            return signalRMessages.AddAsync(
-                   new SignalRMessage
-                   {
-                       Target = "newMessage",
-                       Arguments = new[] { command }
-                   });
-        }
-
-        [FunctionName("leftforward")]
-        public static Task LeftForward(
-            [HttpTrigger(AuthorizationLevel.Anonymous, "get", Route = null)] HttpRequest req,
-            [SignalR(HubName = "ROVER")] IAsyncCollector<SignalRMessage> signalRMessages,
-            ILogger log)
-        {
-            string command = ((int)MotorControl.LeftForward).ToString();
-
-            return signalRMessages.AddAsync(
-                   new SignalRMessage
-                   {
-                       Target = "newMessage",
-                       Arguments = new[] { command }
-                   });
-        }
-
-        [FunctionName("rightforward")]
-        public static Task RightForward(
-            [HttpTrigger(AuthorizationLevel.Anonymous, "get", Route = null)] HttpRequest req,
-            [SignalR(HubName = "ROVER")] IAsyncCollector<SignalRMessage> signalRMessages,
-            ILogger log)
-        {
-            string command = ((int)MotorControl.RightForward).ToString();
-
-            return signalRMessages.AddAsync(
-                   new SignalRMessage
-                   {
-                       Target = "newMessage",
-                       Arguments = new[] { command }
-                   });
-        }
-
-        [FunctionName("leftbackward")]
-        public static Task LeftBackward(
-            [HttpTrigger(AuthorizationLevel.Anonymous, "get", Route = null)] HttpRequest req,
-            [SignalR(HubName = "ROVER")] IAsyncCollector<SignalRMessage> signalRMessages,
-            ILogger log)
-        {
-            string command = ((int)MotorControl.LeftBackward).ToString();
-
-            return signalRMessages.AddAsync(
-                   new SignalRMessage
-                   {
-                       Target = "newMessage",
-                       Arguments = new[] { command }
-                   });
-        }
-
-        [FunctionName("rightbackward")]
-        public static Task RightBackward(
-            [HttpTrigger(AuthorizationLevel.Anonymous, "get", Route = null)] HttpRequest req,
-            [SignalR(HubName = "ROVER")] IAsyncCollector<SignalRMessage> signalRMessages,
-            ILogger log)
-        {
-            string command = ((int)MotorControl.RightBackward).ToString();
-
-            return signalRMessages.AddAsync(
-                   new SignalRMessage
-                   {
-                       Target = "newMessage",
-                       Arguments = new[] { command }
-                   });
-        }
-
-        [FunctionName("backward")]
-        public static Task Backward(
-            [HttpTrigger(AuthorizationLevel.Anonymous, "get", Route = null)] HttpRequest req,
-            [SignalR(HubName = "ROVER")] IAsyncCollector<SignalRMessage> signalRMessages,
-            ILogger log)
-        {
-            string command = ((int)MotorControl.Backward).ToString();
-
-            return signalRMessages.AddAsync(
-                   new SignalRMessage
-                   {
-                       Target = "newMessage",
-                       Arguments = new[] { command }
-                   });
-        }
-
-        [FunctionName("sharpleft")]
-        public static Task SharpLeft(
-            [HttpTrigger(AuthorizationLevel.Anonymous, "get", Route = null)] HttpRequest req,
-            [SignalR(HubName = "ROVER")] IAsyncCollector<SignalRMessage> signalRMessages,
-            ILogger log)
-        {
-            string command = ((int)MotorControl.SharpLeft).ToString();
-
-            return signalRMessages.AddAsync(
-                   new SignalRMessage
-                   {
-                       Target = "newMessage",
-                       Arguments = new[] { command }
-                   });
-        }
-
-        [FunctionName("sharpright")]
-        public static Task SharpRight(
-            [HttpTrigger(AuthorizationLevel.Anonymous, "get", Route = null)] HttpRequest req,
-            [SignalR(HubName = "ROVER")] IAsyncCollector<SignalRMessage> signalRMessages,
-            ILogger log)
-        {
-            string command = ((int)MotorControl.SharpRight).ToString();
-
-            return signalRMessages.AddAsync(
-                   new SignalRMessage
-                   {
-                       Target = "newMessage",
-                       Arguments = new[] { command }
-                   });
-        }
-
-        [FunctionName("shutDown")]
-        public static Task ShutDown(
-            [HttpTrigger(AuthorizationLevel.Anonymous, "get", Route = null)] HttpRequest req,
-            [SignalR(HubName = "ROVER")] IAsyncCollector<SignalRMessage> signalRMessages,
-            ILogger log)
-        {
-            string command = ((int)MotorControl.ShutDown).ToString();
+            string command = req.Query["cmd"];
 
             return signalRMessages.AddAsync(
                    new SignalRMessage

@@ -11,34 +11,31 @@ namespace Rpi.Rover.Server
 {
     class Program
     {
-        enum MotorMap : byte
-        {
-            TwoPlus = 21, TwoMinus = 26, OnePlus = 19, OneMinus = 20
-        }
-
-        enum MotorControl
-        {
-            Stop, Forward, LeftForward, RightForward, LeftBackward, RightBackward, Backward, SharpLeft, SharpRight, ShutDown, Unknown
-        }
+        enum MotorMap : byte { TwoPlus = 21, TwoMinus = 26, OnePlus = 19, OneMinus = 20 }
+        enum MotorControl { Stop, Forward, LeftForward, RightForward, Backward, SharpLeft, SharpRight, ShutDown }
 
         static GpioController controller = new GpioController();
         static Motor left = new Motor(controller, (int)MotorMap.TwoMinus, (int)MotorMap.TwoPlus);
         static Motor right = new Motor(controller, (int)MotorMap.OneMinus, (int)MotorMap.OnePlus);
 
+        static Action[][] direction = new Action[][]{
+            new Action[] { left.Stop, right.Stop },         // stop
+            new Action[] { left.Forward, right.Forward },   // forward
+            new Action[] { left.Stop, right.Forward },      // left
+            new Action[] { left.Forward, right.Stop },      // right
+            new Action[] { left.Backward, right.Backward},  // backwards
+            new Action[] { left.Forward, right.Backward },  // left circle
+            new Action[] { left.Backward, right.Forward },  // right circle
+            new Action[] { ShutDown, null}                  // shutdown
+        };
+
+        static HubConnection signalrConnection = null;
+
         static async Task Main(string[] args)
         {
-            if (args.Length == 0)
-            {
-                Console.WriteLine("Expecting Rover Controller SignalR Azure Function URI as command line argument");
-            }
-            else
-            {
-                Console.WriteLine(args[0]);
-            }
+            Uri signalrFunctionUri = new Uri(Environment.GetEnvironmentVariable("SIGNALR_URL"));
 
-            Uri signalrFunctionUri = new Uri(args[0]);
-
-            var signalrConnection = new HubConnectionBuilder()
+            signalrConnection = new HubConnectionBuilder()
                  .WithUrl(signalrFunctionUri)
                  .ConfigureLogging(logging =>
                  {
@@ -47,83 +44,20 @@ namespace Rpi.Rover.Server
                  }).Build();
 
             signalrConnection.On<string>("newMessage", RoverActions);
-
-            signalrConnection.Closed += async e =>
-            {
-                Console.WriteLine("### SignalR Connection closed... ###");
-                try
-                {
-                    await Task.Delay(new Random().Next(0, 5) * 1000);
-                    await signalrConnection.StartAsync();
-                }
-                catch (Exception ex)
-                {
-                    Console.WriteLine($"### SignalR Connection Exception: {ex.Message}");
-                }
-                Console.WriteLine("### Connected to SignalR... ###");
-            };
-
-            // wrap in exception handler in case no current active internet connection
-            try
-            {
-                await signalrConnection.StartAsync();
-            }
-            catch (Exception ex)
-            {
-                Console.WriteLine(ex.Message);
-            }
+            signalrConnection.Closed += async e => await RestartSignalR();
+            await StartSignalR();
 
             Thread.Sleep(Timeout.Infinite);
         }
 
         static void RoverActions(string action)
         {
-            int cmd;
+            MotorControl control;
 
-            if (int.TryParse(action, out cmd))
+            if (Enum.TryParse(action, true, out control))
             {
-                switch ((MotorControl)cmd)
-                {
-                    case MotorControl.Stop: // stop
-                        left.Stop();
-                        right.Stop();
-                        break;
-                    case MotorControl.Forward: // forward
-                        left.Forward();
-                        right.Forward();
-                        break;
-                    case MotorControl.LeftForward: // left
-                        left.Stop();
-                        right.Forward();
-                        break;
-                    case MotorControl.RightForward: // right
-                        left.Forward();
-                        right.Stop();
-                        break;
-                    case MotorControl.LeftBackward: // leftbackward
-                        left.Stop();
-                        right.Backward();
-                        break;
-                    case MotorControl.RightBackward: // right backward
-                        left.Backward();
-                        right.Stop();
-                        break;
-                    case MotorControl.Backward:
-                        left.Backward();
-                        right.Backward();
-                        break;
-                    case MotorControl.SharpLeft: // sharpleft
-                        left.Forward();
-                        right.Backward();
-                        break;
-                    case MotorControl.SharpRight: //sharpright
-                        left.Backward();
-                        right.Forward();
-                        break;
-                    case MotorControl.ShutDown:
-                        ShutDown();
-                        break;
-                }
+                direction[(int)control][0]();
+                direction[(int)control][1]();
             }
         }
 
@@ -151,6 +85,39 @@ namespace Rpi.Rover.Server
             {
                 Console.WriteLine(ex.Message);
             }
+        }
+
+        static async Task StartSignalR()
+        {
+            // wrap in exception handler in case no current active internet connection
+            while (true)
+            {
+                try
+                {
+                    await signalrConnection.StartAsync();
+                    break;
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine(ex.Message);
+                    await Task.Delay(2000);
+                }
+            }
+        }
+
+        static async Task RestartSignalR()
+        {
+            Console.WriteLine("### SignalR Connection closed... ###");
+            try
+            {
+                await Task.Delay(new Random().Next(0, 5) * 1000);
+                await signalrConnection.StartAsync();
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"### SignalR Connection Exception: {ex.Message}");
+            }
+            Console.WriteLine("### Connected to SignalR... ###");
         }
     }
 }
